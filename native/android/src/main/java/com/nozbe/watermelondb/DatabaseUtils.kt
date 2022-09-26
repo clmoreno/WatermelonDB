@@ -1,7 +1,7 @@
 package com.nozbe.watermelondb
 
-import android.database.Cursor
 import com.facebook.react.bridge.WritableMap
+import net.sqlcipher.Cursor
 
 typealias SQL = String
 typealias RecordID = String

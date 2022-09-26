@@ -2,19 +2,20 @@ package com.nozbe.watermelondb
 
 import android.os.Trace
 import android.content.Context
-import android.database.Cursor
+import android.os.Build
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.WritableArray
+import net.sqlcipher.Cursor
 import java.lang.Exception
 import java.util.logging.Logger
 
-class DatabaseDriver(context: Context, dbName: String) {
+class DatabaseDriver(context: Context, dbName: String, password: String) {
     class SchemaNeededError : Exception()
     data class MigrationNeededError(val databaseVersion: SchemaVersion) : Exception()
 
-    constructor(context: Context, dbName: String, schemaVersion: SchemaVersion) :
-            this(context, dbName) {
+    constructor(context: Context, dbName: String, password: String, schemaVersion: SchemaVersion) :
+            this(context, dbName, password) {
         when (val compatibility = isCompatible(schemaVersion)) {
             is SchemaCompatibility.NeedsSetup -> throw SchemaNeededError()
             is SchemaCompatibility.NeedsMigration ->
@@ -22,16 +23,16 @@ class DatabaseDriver(context: Context, dbName: String) {
         }
     }
 
-    constructor(context: Context, dbName: String, schema: Schema) : this(context, dbName) {
+    constructor(context: Context, dbName: String, password: String, schema: Schema) : this(context, dbName, password) {
         unsafeResetDatabase(schema)
     }
 
-    constructor(context: Context, dbName: String, migrations: MigrationSet) :
-            this(context, dbName) {
+    constructor(context: Context, dbName: String, password: String, migrations: MigrationSet) :
+            this(context, dbName, password) {
         migrate(migrations)
     }
 
-    private val database: Database = Database(dbName, context)
+    private val database: Database = Database(dbName, context, password)
 
     private val log: Logger? = if (BuildConfig.DEBUG) Logger.getLogger("DB_Driver") else null
 
@@ -113,7 +114,9 @@ class DatabaseDriver(context: Context, dbName: String) {
         val newIds = arrayListOf<Pair<TableName, RecordID>>()
         val removedIds = arrayListOf<Pair<TableName, RecordID>>()
 
-        Trace.beginSection("Batch")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            Trace.beginSection("Batch")
+        }
         try {
             database.transaction {
                 for (i in 0 until operations.size()) {
@@ -138,13 +141,19 @@ class DatabaseDriver(context: Context, dbName: String) {
                 }
             }
         } finally {
-            Trace.endSection()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                Trace.endSection()
+            }
         }
 
-        Trace.beginSection("updateCaches")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            Trace.beginSection("updateCaches")
+        }
         newIds.forEach { markAsCached(table = it.first, id = it.second) }
         removedIds.forEach { removeFromCache(table = it.first, id = it.second) }
-        Trace.endSection()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            Trace.endSection()
+        }
     }
 
     fun unsafeResetDatabase(schema: Schema) {

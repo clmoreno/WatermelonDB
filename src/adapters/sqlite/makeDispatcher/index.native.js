@@ -88,6 +88,7 @@ export const makeDispatcher = (
   type: DispatcherType,
   tag: ConnectionTag,
   dbName: string,
+  _password: string,
   usesExclusiveLocking: boolean,
 ): SqliteDispatcher =>
   type === 'jsi'

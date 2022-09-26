@@ -1,6 +1,7 @@
 package com.nozbe.watermelondb
 
 import android.database.SQLException
+import android.os.Build
 import android.os.Trace
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
@@ -33,6 +34,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
     fun initialize(
         tag: ConnectionTag,
         databaseName: String,
+        password: String,
         schemaVersion: Int,
         promise: Promise
     ) {
@@ -44,6 +46,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
                     driver = DatabaseDriver(
                             context = reactContext,
                             dbName = databaseName,
+                            password = password,
                             schemaVersion = schemaVersion
                     )
             )
@@ -67,6 +70,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
     fun setUpWithSchema(
         tag: ConnectionTag,
         databaseName: String,
+        password: String,
         schema: SQL,
         schemaVersion: SchemaVersion,
         promise: Promise
@@ -75,6 +79,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
             driver = DatabaseDriver(
                     context = reactContext,
                     dbName = databaseName,
+                    password = password,
                     schema = Schema(
                             version = schemaVersion,
                             sql = schema
@@ -87,6 +92,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
     fun setUpWithMigrations(
         tag: ConnectionTag,
         databaseName: String,
+        password: String,
         migrations: SQL,
         fromVersion: SchemaVersion,
         toVersion: SchemaVersion,
@@ -98,6 +104,7 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
                     driver = DatabaseDriver(
                             context = reactContext,
                             dbName = databaseName,
+                            password = password,
                             migrations = MigrationSet(
                                     from = fromVersion,
                                     to = toVersion,
@@ -156,7 +163,9 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
     ) {
         val functionName = function.javaClass.enclosingMethod?.name
         try {
-            Trace.beginSection("DatabaseBridge.$functionName")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                Trace.beginSection("DatabaseBridge.$functionName")
+            }
             when (val connection =
                     connections[tag] ?: promise.reject(
                             Exception("No driver with tag $tag available"))) {
@@ -177,7 +186,9 @@ class DatabaseBridge(private val reactContext: ReactApplicationContext) :
         } catch (e: SQLException) {
             promise.reject(functionName, e)
         } finally {
-            Trace.endSection()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                Trace.endSection()
+            }
         }
     }
 

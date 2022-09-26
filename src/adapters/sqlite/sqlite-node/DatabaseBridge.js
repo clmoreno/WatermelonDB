@@ -24,6 +24,7 @@ class DatabaseBridge {
   initialize(
     tag: number,
     databaseName: string,
+    _password: string,
     schemaVersion: number,
     resolve: (status: { code: string, databaseVersion?: number }) => void,
     reject: () => void,
@@ -52,6 +53,7 @@ class DatabaseBridge {
   setUpWithSchema(
     tag: number,
     databaseName: string,
+    _password: string,
     schema: string,
     schemaVersion: number,
     resolve: (boolean) => void,
@@ -66,6 +68,7 @@ class DatabaseBridge {
   setUpWithMigrations(
     tag: number,
     databaseName: string,
+    _password: string,
     migrations: string,
     fromVersion: number,
     toVersion: number,
